@@ -25,8 +25,8 @@ and, if not, prompt the for a new hostname to setup.
 
 - **/etc/init.d/hostname-persist**  
 A wrapper around `hostname-setup` to be registered with `initrd`. When
-invoked, it updates `/etc/hostname` and `/etc/hosts`, according to the
-current hostname.
+invoked, it updates `/etc/hostname`, `/etc/hosts` and `/etc/mailname`,
+according to the current hostname.
 
 - **/sbin/hostname-setup**  
 The main script. When invoked directly, it  will perform all operations
