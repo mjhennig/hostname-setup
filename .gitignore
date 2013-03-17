@@ -1,0 +1,8 @@
+# Any hidden files
+.*
+
+# Any tar(1) package created for manual distribution
+*.tar.*
+*.tgz
+*.tar
+
