@@ -56,14 +56,6 @@ is_invalid_hostname() {
     test $? -ne 0
 }
 
-# Update the 2nd and/or 3rd line of /etc/hosts
-update_etc_hosts() {
-    sed -i.`date +%Y%m%d%H%M%S` \
-    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\)\s*$/\1'"$1"'\2/' \
-    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\s\+\)[^.]\+\s*$/\1'"$1"'\2'"$1"'/' \
-    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\s*$/\1'"$1"'/' /etc/hosts
-}
-
 # Obtain the current runtime hostname
 get_runtime_hostname() {
     for COMMAND in \
@@ -92,11 +84,32 @@ get_persistent_hostname() {
 
 # Update the persistent hostname
 set_persistent_hostname() {
-    echo -n "$ARGV0: Updating /etc/hostname ... " >&2 \
-    && echo "$1" >/etc/hostname 2>/dev/null \
-    && echo "done" >&2 \
-    && echo -n "$ARGV0: Updating /etc/hosts ... " >&2 \
-    && update_etc_hosts "$1" \
+    update_etc_hostname "$@"
+    update_etc_hosts "$@"
+    update_etc_mailname "$@"
+}
+
+# Create or update /etc/hostname
+update_etc_hostname() {
+    echo -n "$ARGV0: Updating /etc/hostname ... " >&2
+    echo "$1" >/etc/hostname 2>/dev/null \
+    && echo "done" >&2
+}
+
+# Update the 2nd and/or 3rd line of /etc/hosts
+update_etc_hosts() {
+    echo -n "$ARGV0: Updating /etc/hosts ... " >&2
+    sed -i.`date +%Y%m%d%H%M%S` \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\)\s*$/\1'"$1"'\2/' \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\s\+\)[^.]\+\s*$/\1'"$1"'\2'"$1"'/' \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\s*$/\1'"$1"'/' /etc/hosts \
+    && echo "done" >&2
+}
+
+# Update /etc/mailname unless absent
+update_etc_mailname() {
+    echo -n "$ARGV0: Updating /etc/mailname ... " >&2
+    sed -i.`date +%Y%m%d%H%M%S` -e '1 s/^[^.]\+/'"$1"'/' /etc/mailname \
     && echo "done" >&2
 }
 
