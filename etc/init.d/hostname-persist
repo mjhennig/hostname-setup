@@ -1,0 +1,30 @@
+#!/bin/sh
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75
+### BEGIN INIT INFO
+# Provides:             hostname-persist
+# Required-Start:   	mountall
+# Required-Stop:    
+# Default-Start:        S
+# Default-Stop:         
+# Short-Description:    Persist the current hostname
+### END INIT INFO
+ARGV0=`basename $0`
+
+case "$1" in
+    start)
+        shift;
+        HOSTNAME_SETUP_ARGV0=hostname-persist hostname-setup "$@"
+        ;;
+    restart|reload|force-reload)
+        echo "$ARGV0: $1 is not supported" >&2
+        exit 3
+        ;;
+    stop)
+        # Nothing to do
+        ;;
+    *)
+        echo "Usage: $ARGV0 [start|stop]" >&2
+        exit 3
+        ;;
+esac
+

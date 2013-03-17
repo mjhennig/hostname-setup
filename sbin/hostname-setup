@@ -1,0 +1,145 @@
+#!/bin/sh
+# ------------------------------------------------------------------------
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75   :
+# ------------------------------------------------------------------------
+# Copyright (c) 2013 Mathias J. Hennig                                   :
+#                                                                        :
+# All rights reserved.                                                   :
+#                                                                        :
+# Redistribution and use in source and binary forms, with or without     :
+# modification, are permitted provided that the following conditions     :
+# are met:                                                               :
+#                                                                        :
+# 1)  Redistributions of source code must retain the above copyright     :
+#     notice, this list of conditions and the following disclaimer.      :
+# 2)  Redistributions in binary form must reproduce the above copyright  :
+#     notice, this list of conditions and the following disclaimer in    :
+#     the documentation and/or other materials provided with the         :
+#     distribution.                                                      :
+#                                                                        :
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDER AND CONTRIBUTORS     :
+# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT      :
+# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR  :
+# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT   :
+# HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, :
+# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT       :
+# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,  :
+# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY  :
+# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT    :
+# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE  :
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.   :
+# ------------------------------------------------------------------------
+ARGV0="`basename ${HOSTNAME_SETUP_ARGV0:-$0}`"
+
+# Import explicit setup variables, if any
+if [ -e "/etc/default/hostname-setup" ]; then
+    . "/etc/default/hostname-setup"
+fi
+
+# The default hostname whitelist pattern
+: ${HOSTNAME_SETUP_ALLOW:="[[:alnum:]\\-]\\+"}
+# The default hostname blacklist pattern
+: ${HOSTNAME_SETUP_DENY:="localhost"}
+# The default prompt to ask for a new hostname
+: ${HOSTNAME_SETUP_PROMPT:="Please enter a new name for this host: "}
+# The path to the hostname(1) executable, if any
+: ${HOSTNAME_SETUP_HOSTNAME:="`which hostname 2>/dev/null`"}
+
+# The hostname checks are performed at multiple positions in the script,
+# so we have an explicit function for that
+is_invalid_hostname() {
+    # Apply the black- and white-list patterns
+    echo "$1" \
+    |   grep -v "^$HOSTNAME_SETUP_DENY\$" \
+    |   grep "^$HOSTNAME_SETUP_ALLOW\$" >/dev/null
+    # Reverse the testresult (we're checking for INvalid names)
+    test $? -ne 0
+}
+
+# Update the 2nd and/or 3rd line of /etc/hosts
+update_etc_hosts() {
+    sed -i.`date +%Y%m%d%H%M%S` \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\)\s*$/\1'"$1"'\2/' \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\(\.[^ \t]\+\s\+\)[^.]\+\s*$/\1'"$1"'\2'"$1"'/' \
+    -e '2,+1 s/^\(\s*127\.0\.1\.1\s\+\)[^.]\+\s*$/\1'"$1"'/' /etc/hosts
+}
+
+# Obtain the current runtime hostname
+get_runtime_hostname() {
+    for COMMAND in \
+            "$HOSTNAME_SETUP_HOSTNAME" \
+            "eval echo \"\$HOSTNAME\"" \
+            "cat /etc/hostname"; do
+        if OUTPUT="`$COMMAND 2>/dev/null`" \
+                && test ! -z "$OUTPUT"; then
+            echo "$OUTPUT" | xargs echo | sed 's/.*\s//'
+            break
+        fi
+    done
+}
+
+# Update the current runtime hostname
+set_runtime_hostname() {
+    echo -n "$ARGV0: Invoking hostname(1) ... " >&2 \
+    && $HOSTNAME_SETUP_HOSTNAME "$1" \
+    && echo "done" >&2
+}
+
+# Obtain the persistent hostname, if any
+get_persistent_hostname() {
+    cat /etc/hostname 2>/dev/null
+}
+
+# Update the persistent hostname
+set_persistent_hostname() {
+    echo -n "$ARGV0: Updating /etc/hostname ... " >&2 \
+    && echo "$1" >/etc/hostname 2>/dev/null \
+    && echo "done" >&2 \
+    && echo -n "$ARGV0: Updating /etc/hosts ... " >&2 \
+    && update_etc_hosts "$1" \
+    && echo "done" >&2
+}
+
+# The main function invoked when called as "hostname-prompt"
+hostname_prompt() {
+    HOSTNAME="`get_persistent_hostname`"
+    # Start the setup workflow only if necessary
+    if is_invalid_hostname "$HOSTNAME"; then
+        # Prompt until a valid hostname is provided
+        while :; do
+            echo -n "$HOSTNAME_SETUP_PROMPT"
+            read HOSTNAME
+            is_invalid_hostname "$HOSTNAME" || break
+            echo "The name must match: /$HOSTNAME_SETUP_ALLOW/" >&2
+            echo "The name shall not match: /$HOSTNAME_SETUP_DENY/" >&2
+        done
+        # Update the runtime configuration
+        set_runtime_hostname "$HOSTNAME"
+    fi
+}
+
+# The main function invoked when called as "hostname-persist"
+hostname_persist() {
+    RH="`get_runtime_hostname`"
+    PH="`get_persistent_hostname`"
+    test "x$RH" = "x$PH" \
+    || set_persistent_hostname "$RH"
+}
+
+# The main function invoked by default
+hostname_setup() {
+    hostname_prompt
+    HOSTNAME="`get_runtime_hostname`"
+    hostname_persist "$HOSTNAME"
+}
+
+# Determine how to behave and call the desired function
+case "$ARGV0" in
+    hostname-prompt)
+        hostname_prompt "$@" ;;
+    hostname-persist)
+        hostname_persist "$@" ;;
+    *) # default
+        hostname_setup "$@" ;;
+esac
+

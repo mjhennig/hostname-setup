@@ -1,0 +1,1 @@
+usr/share/doc/hostname-setup/README.md

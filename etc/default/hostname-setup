@@ -1,0 +1,20 @@
+#!/bin/sh
+# ------------------------------------------------------------------------
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75   :
+# ------------------------------------------------------------------------
+# This file can be used to change the behavior of the hostname-setup     :
+# script, e.g. it's black- and white-list patterns                       :
+# ------------------------------------------------------------------------
+
+# The default hostname whitelist pattern
+: ${HOSTNAME_SETUP_ALLOW:="[[:alnum:]\\-]\\+"}
+
+# The default hostname blacklist pattern
+: ${HOSTNAME_SETUP_DENY:="localhost"}
+
+# The default prompt to ask for a new hostname
+: ${HOSTNAME_SETUP_PROMPT:="Please enter a new name for this host: "}
+
+# The path to the hostname(1) executable
+: ${HOSTNAME_SETUP_HOSTNAME:="`which hostname 2>/dev/null`"}
+
