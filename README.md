@@ -1,1 +1,1 @@
-usr/share/doc/hostname-setup/README.md
+source/usr/share/doc/hostname-setup/README.md
