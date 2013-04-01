@@ -1,0 +1,9 @@
+Package: hostname-setup
+Version:
+Section: admin
+Priority: optional
+Architecture: all
+Depends: coreutils
+Maintainer:
+Description: Hostname Setup At Boot Time
+

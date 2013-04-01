@@ -1,0 +1,3 @@
+#!/bin/sh
+update-rc.d hostname-setup start 01 S
+
