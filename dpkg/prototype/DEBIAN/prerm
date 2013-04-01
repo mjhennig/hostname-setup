@@ -1,3 +1,4 @@
 #!/bin/sh
-update-rc.d -f hostname-setup remove
+update-rc.d -f hostname-prompt remove
+update-rc.d -f hostname-persist remove
 

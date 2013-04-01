@@ -1,3 +1,4 @@
 #!/bin/sh
-update-rc.d hostname-setup start 01 S
+update-rc.d hostname-prompt start 01 S
+update-rc.d hostname-persist start 01 S
 
