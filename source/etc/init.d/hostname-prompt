@@ -2,6 +2,7 @@
 # vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75
 ### BEGIN INIT INFO
 # Provides:             hostname-prompt
+# X-Start-Before:		ifupdown
 # Required-Start:   	keyboard-setup
 # Required-Stop:    
 # Default-Start:        S

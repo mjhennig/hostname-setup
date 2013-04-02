@@ -84,9 +84,11 @@ get_persistent_hostname() {
 
 # Update the persistent hostname
 set_persistent_hostname() {
-    update_etc_hostname "$@"
-    update_etc_hosts "$@"
-    update_etc_mailname "$@"
+    set_runtime_hostname "$1"
+    update_etc_hostname "$1"
+    update_etc_hosts "$1"
+    update_etc_mailname "$1"
+    update_etc_dhcp_dhlient_conf "`hostname --fqdn`"
 }
 
 # Create or update /etc/hostname
@@ -111,6 +113,13 @@ update_etc_mailname() {
     echo -n "$ARGV0: Updating /etc/mailname ... " >&2
     sed -i.`date +%Y%m%d%H%M%S` -e '1 s/^[^.]\+/'"$1"'/' /etc/mailname \
     && echo "done" >&2
+}
+
+# Update /etc/dhcp/dhclient.conf unless absent
+update_etc_dhcp_dhlient_conf() {
+    sed -i.`date +%Y%m%d%H%M%S` \
+    -e 's/^\s*#\?\s*\(send\s\+host-name\s\+"\)[^"]\+/\1'"$1"'/' \
+    /etc/dhcp/dhclient.conf
 }
 
 # The main function invoked when called as "hostname-prompt"
